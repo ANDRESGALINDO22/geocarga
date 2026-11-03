@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GeoCarga Radar</title>
+
+    <link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
+    <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <aside>
+        <div class="marca">
+            <h2>✈ GeoCarga</h2>
+            <p>Centro de monitoreo aéreo</p>
+        </div>
+
+        <section class="estadisticas">
+            <h3>📊 Estadísticas</h3>
+
+            <div class="estadistica">
+                <span>Aeronaves monitoreadas</span>
+                <strong id="total-aviones">0</strong>
+            </div>
+
+            <div class="estadistica">
+                <span>Vuelos activos</span>
+                <strong id="vuelos-activos">0</strong>
+            </div>
+
+            <div class="estadistica">
+                <span>Vuelos finalizados</span>
+                <strong id="vuelos-finalizados">0</strong>
+            </div>
+        </section>
+
+        <h3>✈ Aeronaves</h3>
+        <div id="lista-aviones">Cargando...</div>
+    </aside>
+
+    <main id="map"></main>
+
+    <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
