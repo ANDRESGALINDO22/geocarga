@@ -1,0 +1,323 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #080f1e;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+/* PANEL LATERAL */
+
+aside {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 310px;
+    padding: 20px;
+    background: #0b1426;
+    border-right: 1px solid #25344e;
+    z-index: 2;
+    overflow-y: auto;
+}
+
+.marca {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #25344e;
+}
+
+aside h2 {
+    color: #38bdf8;
+    margin: 0 0 8px;
+}
+
+aside h3 {
+    font-size: 15px;
+    margin-top: 22px;
+}
+
+aside p {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+/* MAPA */
+
+#map {
+    position: absolute;
+    left: 310px;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+/* ESTADÍSTICAS */
+
+.estadisticas {
+    margin-top: 18px;
+}
+
+.estadistica {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: #172338;
+    border: 1px solid #25344e;
+    border-radius: 9px;
+    padding: 12px;
+    margin: 8px 0;
+}
+
+.estadistica span {
+    font-size: 12px;
+    color: #cbd5e1;
+}
+
+.estadistica strong {
+    font-size: 22px;
+    color: #38bdf8;
+}
+
+/* TARJETAS DE AVIONES */
+
+.avion {
+    padding: 14px;
+    margin: 10px 0;
+    background: #172338;
+    border-radius: 9px;
+    border-left: 4px solid;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.avion:hover {
+    background: #243550;
+    transform: translateX(3px);
+}
+
+.avion strong {
+    display: block;
+    font-size: 14px;
+}
+
+.avion small {
+    display: block;
+    margin-top: 8px;
+    color: #94a3b8;
+}
+
+/* TELEMETRÍA */
+
+.telemetria {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #334155;
+}
+
+.telemetria p {
+    font-size: 12px;
+    color: #cbd5e1;
+    margin: 7px 0;
+}
+
+/* PROGRESO */
+
+.progreso-texto {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #cbd5e1;
+}
+
+.barra-progreso {
+    width: 100%;
+    height: 9px;
+    margin-top: 7px;
+    border-radius: 20px;
+    background: #334155;
+    overflow: hidden;
+}
+
+.barra-progreso-relleno {
+    width: 0%;
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.8s ease;
+}
+
+/* AVIONES EN EL MAPA */
+
+.marcador-avion {
+    font-size: 30px;
+    line-height: 1;
+    cursor: pointer;
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* PANTALLAS PEQUEÑAS */
+
+@media (max-width: 700px) {
+    aside {
+        width: 230px;
+        padding: 12px;
+    }
+
+    #map {
+        left: 230px;
+    }
+}
+/* =========================================
+   GEOCARGA - POPUP AERONÁUTICO
+========================================= */
+
+.maplibregl-popup {
+    max-width: 340px !important;
+    z-index: 10;
+}
+
+.maplibregl-popup-content {
+    background: #0b1426 !important;
+    color: #ffffff !important;
+    padding: 0 !important;
+    border: 1px solid #334155;
+    border-radius: 14px !important;
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.65),
+        0 0 22px rgba(56, 189, 248, 0.12);
+    overflow: hidden;
+}
+
+.maplibregl-popup-tip {
+    border-top-color: #0b1426 !important;
+    border-bottom-color: #0b1426 !important;
+}
+
+.maplibregl-popup-close-button {
+    color: #ffffff !important;
+    font-size: 20px !important;
+    padding: 5px 10px !important;
+    z-index: 5;
+}
+
+.maplibregl-popup-close-button:hover {
+    background: #ef4444 !important;
+}
+
+.popup-geocarga {
+    width: 290px;
+    font-family: Arial, sans-serif;
+}
+
+.popup-header {
+    padding: 15px;
+    background: linear-gradient(
+        135deg,
+        #0f2746,
+        #111827
+    );
+    border-bottom: 1px solid #334155;
+}
+
+.popup-marca {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #38bdf8;
+    font-weight: bold;
+}
+
+.popup-nombre {
+    margin-top: 8px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.popup-estado {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.popup-estado.finalizado {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+}
+
+.popup-body {
+    padding: 15px;
+}
+
+.popup-carga {
+    font-size: 12px;
+    color: #cbd5e1;
+    margin-bottom: 15px;
+}
+
+.popup-ruta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.popup-dato {
+    padding: 10px;
+    background: #172338;
+    border: 1px solid #25344e;
+    border-radius: 8px;
+}
+
+.popup-dato span {
+    display: block;
+    color: #94a3b8;
+    font-size: 10px;
+    margin-bottom: 5px;
+}
+
+.popup-dato strong {
+    display: block;
+    font-size: 13px;
+    color: #ffffff;
+    overflow-wrap: anywhere;
+}
+
+.popup-progreso-titulo {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 7px;
+}
+
+.popup-progreso-fondo {
+    width: 100%;
+    height: 8px;
+    background: #25344e;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.popup-progreso-barra {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.popup-gps {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #25344e;
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.8;
+}

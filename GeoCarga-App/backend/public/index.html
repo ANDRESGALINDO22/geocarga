@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoCarga</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
+
+  <div id="vista-login" class="bg-slate-800 p-8 rounded-xl shadow-xl border border-slate-700 w-full max-w-md">
+    <h1 class="text-3xl font-bold text-sky-400 text-center mb-2">GeoCarga</h1>
+    <p class="text-xs text-slate-400 text-center mb-6">Control Logístico Transfronterizo</p>
+    
+    <div id="error" class="hidden mb-4 p-3 bg-red-900/50 border border-red-700 text-red-200 text-sm rounded"></div>
+
+    <form id="form-login" class="space-y-4">
+      <div>
+        <label class="block text-xs uppercase text-slate-400 mb-1">Correo</label>
+        <input type="email" id="correo" value="admin@geocarga.com" required class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded text-white">
+      </div>
+      <div>
+        <label class="block text-xs uppercase text-slate-400 mb-1">Contraseña</label>
+        <input type="password" id="contrasena" value="admin123" required class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded text-white">
+      </div>
+      <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 font-semibold rounded text-white transition">Ingresar</button>
+    </form>
+  </div>
+
+  <div id="vista-dash" class="hidden w-full max-w-4xl bg-slate-800 p-6 rounded-xl border border-slate-700">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-sky-400">Dashboard GeoCarga</h2>
+      <button onclick="location.reload()" class="text-xs bg-red-700 px-3 py-1.5 rounded">Salir</button>
+    </div>
+    <div id="datos" class="text-slate-300">Cargando...</div>
+  </div>
+
+  <script>
+    document.getElementById('form-login').onsubmit = async (e) => {
+      e.preventDefault();
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          correo: document.getElementById('correo').value,
+          contrasena: document.getElementById('contrasena').value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('error').textContent = data.mensaje || 'Error';
+        document.getElementById('error').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('vista-login').classList.add('hidden');
+      document.getElementById('vista-dash').classList.remove('hidden');
+      
+      const dashRes = await fetch('/api/dashboard');
+      const dashData = await dashRes.json();
+      document.getElementById('datos').innerHTML = `
+        <p class="mb-2"><strong>Usuario:</strong> ${data.usuario.nombre} (${data.usuario.rol})</p>
+        <div class="grid grid-cols-3 gap-4 mt-4">
+          <div class="bg-slate-900 p-4 rounded border border-slate-700">En tránsito: <span class="text-xl font-bold text-sky-400">${dashData.resumen.en_transito}</span></div>
+          <div class="bg-slate-900 p-4 rounded border border-slate-700">En Aduana: <span class="text-xl font-bold text-amber-400">${dashData.resumen.en_aduana}</span></div>
+          <div class="bg-slate-900 p-4 rounded border border-slate-700">Entregados: <span class="text-xl font-bold text-emerald-400">${dashData.resumen.entregados}</span></div>
+        </div>
+      `;
+    };
+  </script>
+</body>
+</html>

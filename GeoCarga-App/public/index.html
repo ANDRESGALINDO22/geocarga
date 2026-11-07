@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoCarga - Sistema de Control Logístico</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+  <!-- VISTA 1: LOGIN -->
+  <div id="vista-login" class="flex min-h-screen items-center justify-center p-4">
+    <div class="bg-slate-800 p-8 rounded-xl shadow-2xl border border-slate-700 w-full max-w-md">
+      <div class="text-center mb-6">
+        <h1 class="text-3xl font-bold text-sky-400">GeoCarga</h1>
+        <p class="text-xs text-slate-400 mt-1">Control Logístico y Rastreo Transfronterizo</p>
+      </div>
+
+      <div id="error-login" class="hidden mb-4 p-3 bg-rose-950 border border-rose-800 text-rose-300 text-sm rounded-lg"></div>
+
+      <form id="form-login" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Correo Electrónico</label>
+          <input type="email" id="correo" value="admin@geocarga.com" required 
+            class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-sky-500 text-white text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Contraseña</label>
+          <input type="password" id="contrasena" value="admin123" required 
+            class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-sky-500 text-white text-sm">
+        </div>
+        <button type="submit" 
+          class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 font-semibold rounded-lg text-white transition">
+          Iniciar Sesión
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- VISTA 2: APLICACIÓN PRINCIPAL -->
+  <div id="vista-app" class="hidden min-h-screen flex flex-col">
+    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <span class="text-xl font-bold text-sky-400">GeoCarga</span>
+        <span class="bg-sky-950 text-sky-400 text-xs px-2.5 py-0.5 rounded border border-sky-800" id="tag-rol">Rol</span>
+      </div>
+      <div class="flex items-center space-x-4">
+        <span class="text-sm text-slate-300" id="nombre-usuario">Usuario</span>
+        <button onclick="cerrarSesion()" class="text-xs bg-rose-900/60 hover:bg-rose-800 text-rose-200 px-3 py-1.5 rounded-lg border border-rose-700">
+          Cerrar Sesión
+        </button>
+      </div>
+    </header>
+
+    <div class="flex flex-1">
+      <aside class="w-64 bg-slate-800/50 border-r border-slate-700 p-4 space-y-2">
+        <button onclick="cambiarSeccion('dashboard')" id="btn-nav-dashboard" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium bg-sky-600 text-white">
+          📊 Dashboard General
+        </button>
+        <button onclick="cambiarSeccion('reportes')" id="btn-nav-reportes" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-700/50">
+          📄 Reporte de Operaciones
+        </button>
+      </aside>
+
+      <main class="flex-1 p-6 space-y-6">
+        <section id="sec-dashboard" class="space-y-6">
+          <h2 class="text-xl font-semibold">Resumen Operativo</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+              <p class="text-xs text-slate-400 uppercase font-semibold">Cargas en Tránsito</p>
+              <h3 class="text-3xl font-bold text-sky-400 mt-2" id="kpi-transito">0</h3>
+            </div>
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+              <p class="text-xs text-slate-400 uppercase font-semibold">En Aduana</p>
+              <h3 class="text-3xl font-bold text-amber-400 mt-2" id="kpi-aduana">0</h3>
+            </div>
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+              <p class="text-xs text-slate-400 uppercase font-semibold">Entregados</p>
+              <h3 class="text-3xl font-bold text-emerald-400 mt-2" id="kpi-entregados">0</h3>
+            </div>
+          </div>
+
+          <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+            <h3 class="text-sm font-semibold uppercase text-slate-300 mb-3">Novedades e Incidencias</h3>
+            <div id="lista-novedades" class="space-y-2 text-sm text-slate-300">
+              Cargando alertas...
+            </div>
+          </div>
+        </section>
+
+        <section id="sec-reportes" class="hidden space-y-4">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Reporte General de Operaciones</h2>
+            <button onclick="cargarReportes()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-slate-200">
+              🔄 Actualizar Datos
+            </button>
+          </div>
+
+          <div class="overflow-x-auto bg-slate-800 rounded-xl border border-slate-700">
+            <table class="w-full text-left text-sm text-slate-300">
+              <thead class="bg-slate-900/80 text-xs uppercase text-slate-400 border-b border-slate-700">
+                <tr>
+                  <th class="p-3.5">ID</th>
+                  <th class="p-3.5">Vuelo</th>
+                  <th class="p-3.5">Aerolínea</th>
+                  <th class="p-3.5">Ruta</th>
+                  <th class="p-3.5">Etapa</th>
+                  <th class="p-3.5">Estado</th>
+                  <th class="p-3.5">Novedades</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-reportes-body" class="divide-y divide-slate-700">
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:4000/api';
+
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const correo = document.getElementById('correo').value;
+      const contrasena = document.getElementById('contrasena').value;
+      const errorDiv = document.getElementById('error-login');
+
+      try {
+        const res = await fetch(API_URL + '/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo, contrasena })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorDiv.textContent = data.mensaje || 'Error al iniciar sesión';
+          errorDiv.classList.remove('hidden');
+          return;
+        }
+
+        localStorage.setItem('geocarga_user', JSON.stringify(data.usuario));
+        mostrarAplicacion(data.usuario);
+      } catch (err) {
+        errorDiv.textContent = 'Error al conectar con el backend local';
+        errorDiv.classList.remove('hidden');
+      }
+    });
+
+    function mostrarAplicacion(usuario) {
+      document.getElementById('vista-login').classList.add('hidden');
+      document.getElementById('vista-app').classList.remove('hidden');
+      document.getElementById('nombre-usuario').textContent = usuario.nombre;
+      document.getElementById('tag-rol').textContent = usuario.rol;
+      cargarDashboard();
+    }
+
+    function cerrarSesion() {
+      localStorage.clear();
+      document.getElementById('vista-app').classList.add('hidden');
+      document.getElementById('vista-login').classList.remove('hidden');
+    }
+
+    function cambiarSeccion(seccion) {
+      const secDash = document.getElementById('sec-dashboard');
+      const secRep = document.getElementById('sec-reportes');
+      const btnDash = document.getElementById('btn-nav-dashboard');
+      const btnRep = document.getElementById('btn-nav-reportes');
+
+      if (seccion === 'dashboard') {
+        secDash.classList.remove('hidden');
+        secRep.classList.add('hidden');
+        btnDash.className = "w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium bg-sky-600 text-white";
+        btnRep.className = "w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-700/50";
+        cargarDashboard();
+      } else {
+        secDash.classList.add('hidden');
+        secRep.classList.remove('hidden');
+        btnRep.className = "w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium bg-sky-600 text-white";
+        btnDash.className = "w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-700/50";
+        cargarReportes();
+      }
+    }
+
+    async function cargarDashboard() {
+      try {
+        const res = await fetch(API_URL + '/dashboard');
+        const data = await res.json();
+
+        document.getElementById('kpi-transito').textContent = data.resumen.en_transito || 0;
+        document.getElementById('kpi-aduana').textContent = data.resumen.en_aduana || 0;
+        document.getElementById('kpi-entregados').textContent = data.resumen.entregados || 0;
+
+        const contNovedades = document.getElementById('lista-novedades');
+        if (!data.novedadesRecientes || data.novedadesRecientes.length === 0) {
+          contNovedades.innerHTML = '<p class="text-slate-500">Sin incidencias activas.</p>';
+          return;
+        }
+
+        contNovedades.innerHTML = data.novedadesRecientes.map(function(n) {
+          return '<div class="flex justify-between items-center bg-slate-900/60 p-3 rounded-lg border border-slate-700/60">' +
+            '<div>' +
+              '<span class="text-xs font-bold text-amber-400">[' + n.tipo + ']</span>' +
+              '<span class="ml-2">' + n.descripcion + '</span>' +
+              '<span class="text-xs text-slate-400 block mt-0.5">Operación #' + n.id_operacion + ' (Vuelo ' + n.numero_vuelo + ')</span>' +
+            '</div>' +
+            '<span class="text-xs text-slate-500">' + new Date(n.fecha).toLocaleDateString() + '</span>' +
+          '</div>';
+        }).join('');
+      } catch (err) {
+        console.error('Error al cargar dashboard', err);
+      }
+    }
+
+    async function cargarReportes() {
+      try {
+        const res = await fetch(API_URL + '/reportes/operaciones');
+        const operaciones = await res.json();
+        const tbody = document.getElementById('tabla-reportes-body');
+
+        tbody.innerHTML = operaciones.map(function(op) {
+          const badgeColor = op.estado_general === 'EN_TRANSITO' 
+            ? 'bg-sky-950 text-sky-400 border border-sky-800' 
+            : 'bg-emerald-950 text-emerald-400 border border-emerald-800';
+
+          return '<tr class="hover:bg-slate-800/50">' +
+            '<td class="p-3.5 font-mono text-sky-400 font-semibold">#' + op.id_operacion + '</td>' +
+            '<td class="p-3.5 font-medium">' + op.numero_vuelo + '</td>' +
+            '<td class="p-3.5 text-slate-400">' + op.aerolinea + '</td>' +
+            '<td class="p-3.5">' + op.origen + ' → ' + op.destino + '</td>' +
+            '<td class="p-3.5"><span class="bg-slate-700 px-2 py-0.5 rounded text-xs">' + op.etapa_flujo + '</span></td>' +
+            '<td class="p-3.5"><span class="text-xs font-semibold px-2 py-0.5 rounded ' + badgeColor + '">' + op.estado_general + '</span></td>' +
+            '<td class="p-3.5 font-semibold ' + (op.total_novedades > 0 ? 'text-amber-400' : 'text-slate-500') + '">' + op.total_novedades + '</td>' +
+          '</tr>';
+        }).join('');
+      } catch (err) {
+        console.error('Error al cargar reportes', err);
+      }
+    }
+
+    const userGuardado = localStorage.getItem('geocarga_user');
+    if (userGuardado) {
+      mostrarAplicacion(JSON.parse(userGuardado));
+    }
+  </script>
+</body>
+</html>
