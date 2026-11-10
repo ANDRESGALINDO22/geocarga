@@ -1,30 +1,30 @@
-import json
+﻿import json
 import math
 import os
 import random
 import time
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # =====================================================
-# CONFIGURACIÓN GENERAL
+# CONFIGURACIÃ“N GENERAL
 # =====================================================
 
 URL = os.getenv("TRACCAR_OSMAND_URL", "http://127.0.0.1:5055/")
 RUTAS = Path(__file__).resolve().parents[1] / "radar" / "rutas.json"
 
-INTERVALO = 3
-
-# Duración acelerada de cada vuelo, en minutos.
+INTERVALO = 1
+# DuraciÃ³n acelerada de cada vuelo, en minutos.
 DURACION_MIN = 6
 DURACION_MAX = 12
 
-# Número de intentos de envío GPS por ciclo.
+# NÃºmero de intentos de envÃ­o GPS por ciclo.
 REINTENTOS = 2
 
 # =====================================================
-# FUNCIONES GEOGRÁFICAS
+# FUNCIONES GEOGRÃFICAS
 # =====================================================
 
 def rad(valor):
@@ -72,7 +72,7 @@ def rumbo(a, b):
 
 def interpolar(a, b, progreso):
     """
-    Interpolación sobre la superficie terrestre.
+    InterpolaciÃ³n sobre la superficie terrestre.
     """
 
     progreso = max(0, min(1, progreso))
@@ -124,7 +124,7 @@ def interpolar(a, b, progreso):
 
 
 # =====================================================
-# COMUNICACIÓN CON TRACCAR
+# COMUNICACIÃ“N CON TRACCAR
 # =====================================================
 
 def enviar(avion, lat, lon, velocidad, altitud, curso):
@@ -165,7 +165,7 @@ def enviar(avion, lat, lon, velocidad, altitud, curso):
 
 
 # =====================================================
-# DISTRIBUCIÓN DE LOS AVIONES
+# DISTRIBUCIÃ“N DE LOS AVIONES
 # =====================================================
 
 def preparar_vuelos(aviones):
@@ -173,7 +173,7 @@ def preparar_vuelos(aviones):
     rng = random.Random(2026)
 
     # Empezar en distintos momentos del recorrido.
-    # Los vuelos no estarán todos en la misma fase.
+    # Los vuelos no estarÃ¡n todos en la misma fase.
     progresos = [
         0.03 + (0.77 * i / max(1, len(aviones) - 1))
         for i in range(len(aviones))
@@ -311,7 +311,7 @@ def ejecutar():
     print("       GEOCARGA RADAR - 30 AERONAVES")
     print("=" * 65)
     print("Cobertura: Sudamerica")
-    print("Actualizacion: 3 segundos")
+    print("Actualizacion: 1 segundo")
     print("Los vuelos terminan al llegar al 100%")
     print("Presiona CTRL + C para detener")
     print("=" * 65)
@@ -331,7 +331,7 @@ def ejecutar():
 
             for avion in aviones:
 
-                # Si el avión ya terminó y su posición
+                # Si el aviÃ³n ya terminÃ³ y su posiciÃ³n
                 # final fue recibida, no volver a moverlo.
                 if (
                     avion["finalizado"]
@@ -374,7 +374,7 @@ def ejecutar():
                         finalizados += 1
 
                         print(
-                            f"🛬 {avion['id']} | "
+                            f"ðŸ›¬ {avion['id']} | "
                             f"{avion['origen']} -> "
                             f"{avion['destino']} | "
                             f"100% | FINALIZADO"
@@ -409,9 +409,9 @@ def ejecutar():
 
             print("-" * 65 + "\n")
 
-            # Terminar únicamente cuando todos
+            # Terminar Ãºnicamente cuando todos
             # hayan llegado y Traccar haya recibido
-            # su última posición.
+            # su Ãºltima posiciÃ³n.
             if finalizados == len(aviones):
 
                 print("=" * 65)

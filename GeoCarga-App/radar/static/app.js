@@ -18,7 +18,7 @@ const animaciones = {};
 const recorridos = {};
 const ultimasPosiciones = {};
 
-const INTERVALO = 3000;
+const INTERVALO = 1000;
 
 let avionSeleccionado = null;
 let actualizando = false;
@@ -525,6 +525,28 @@ function crearAvion(avion) {
 
     marcadores[avion.id] = marcador;
 
+    // GEOCARGA_SELECCION_DESDE_REPORTE_V1
+    const avionSolicitado = new URLSearchParams(window.location.search).get("avion");
+
+    if (avionSolicitado && String(avion.id) === String(avionSolicitado)) {
+        setTimeout(() => {
+            seleccionarAvion(avion.id);
+            actualizarPopup(avion);
+
+            mapa.flyTo({
+                center: marcador.getLngLat(),
+                zoom: 6,
+                essential: true
+            });
+
+            const popup = marcador.getPopup();
+
+            if (popup && !popup.isOpen()) {
+                marcador.togglePopup();
+            }
+        }, 800);
+    }
+
     marcador.setRotation(
         numero(avion.rumbo) - 90
     );
@@ -547,8 +569,18 @@ function crearAvion(avion) {
 
     // SELECCIÓN DESDE EL AVIÓN
 
-    icono.addEventListener("click", () => {
+    icono.addEventListener("click", (evento) => {
+        evento.stopPropagation();
+
         seleccionarAvion(avion.id);
+
+        actualizarPopup(avion);
+
+        const popup = marcador.getPopup();
+
+        if (popup && !popup.isOpen()) {
+            marcador.togglePopup();
+        }
     });
 
     // RECORRIDO REALIZADO

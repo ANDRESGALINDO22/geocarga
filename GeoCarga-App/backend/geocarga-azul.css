@@ -1,0 +1,98 @@
+/* GEOCARGA - TEMA AZUL ELECTRICO */
+
+:root {
+    --gc-blue: #168bff;
+    --gc-cyan: #38bdf8;
+    --gc-white: #f8fafc;
+    --gc-dark: #080b12;
+}
+
+body,
+#vista-app {
+    background: #080b12 !important;
+    color: #f8fafc !important;
+}
+
+#vista-app header {
+    background: linear-gradient(90deg,#060c18,#07182b) !important;
+    border-bottom: 2px solid #168bff !important;
+}
+
+#vista-app aside {
+    background: #090f1b !important;
+    border-right: 1px solid #168bff !important;
+}
+
+#vista-app aside button {
+    color: #f8fafc !important;
+    border-color: #263c58 !important;
+}
+
+#vista-app aside button:hover {
+    background: #123d74 !important;
+    border-color: #38bdf8 !important;
+}
+
+#vista-app aside button[class*="bg-rose"],
+#vista-app aside button[class*="bg-red"],
+#vista-app aside button[class*="from-rose"],
+#vista-app aside button[class*="from-red"],
+#vista-app aside button[style*="gradient"] {
+    background: linear-gradient(120deg,#0756b8,#168bff) !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 15px #168bff55 !important;
+}
+
+#vista-app main {
+    background-color: #080b12 !important;
+}
+
+#vista-app section,
+#vista-app article {
+    border-color: #245b92 !important;
+}
+
+#vista-app main button[class*="bg-rose"],
+#vista-app main button[class*="bg-red"],
+#vista-app main button[class*="from-rose"],
+#vista-app main button[class*="from-red"] {
+    background: linear-gradient(120deg,#0756b8,#168bff) !important;
+    border-color: #38bdf8 !important;
+}
+
+#vista-app [class*="border-rose"],
+#vista-app [class*="border-red"],
+#vista-app [class*="border-pink"] {
+    border-color: #168bff !important;
+}
+
+#vista-app [class*="text-rose"],
+#vista-app [class*="text-red"],
+#vista-app [class*="text-pink"] {
+    color: #38bdf8 !important;
+}
+
+#vista-app [class*="bg-rose"],
+#vista-app [class*="bg-red"],
+#vista-app [class*="bg-pink"] {
+    background-color: #1265d8 !important;
+}
+
+#vista-app [class*="shadow-rose"],
+#vista-app [class*="shadow-red"] {
+    --tw-shadow-color: #168bff !important;
+}
+
+#vista-app button {
+    transition: background .2s, border-color .2s, box-shadow .2s;
+}
+
+#gc-traccar-contenedor,
+#gc-radar-preview,
+#mapa-flota {
+    border-color: #168bff !important;
+}
+/* GEOCARGA - OCULTAR RADAR ANTIGUO DUPLICADO */
+#sec-tracer #flota-radar {
+    display: none !important;
+}

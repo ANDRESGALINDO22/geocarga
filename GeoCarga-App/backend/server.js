@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
@@ -56,14 +56,47 @@ if (!fs.existsSync(uploadsDir)) {
 app.use('/uploads', exigirSesion);
 app.get('/uploads/:archivo', async (req, res, next) => {
   try {
-    const url = '/uploads/' + req.params.archivo;
+    const nombre = req.params.archivo;
+
+    if (nombre !== path.basename(nombre)) {
+      return res.sendStatus(400);
+    }
+
+    const url = '/uploads/' + nombre;
+
     const { rows } = await pool.query(
-      'SELECT d.contenido FROM documentacion d WHERE d.url_almacenamiento = $1 AND ($2::int IS NULL OR EXISTS (SELECT 1 FROM operacion_usuarios a WHERE a.id_operacion = d.id_operacion AND a.id_usuario = $2)) LIMIT 1',
+      `SELECT d.contenido
+       FROM documentacion d
+       WHERE d.url_almacenamiento = $1
+       AND (
+         $2::int IS NULL
+         OR EXISTS (
+           SELECT 1 FROM operacion_usuarios a
+           WHERE a.id_operacion = d.id_operacion
+           AND a.id_usuario = $2
+         )
+       )
+       LIMIT 1`,
       [url, usuarioRestringido(req.usuario)]
     );
-    if (!rows.length) return res.sendStatus(404);
-    if (!rows[0].contenido) return next();
-    res.attachment(req.params.archivo).send(rows[0].contenido);
+
+    if (!rows.length) {
+      return res.sendStatus(404);
+    }
+
+    if (rows[0].contenido) {
+      return res.attachment(nombre).send(rows[0].contenido);
+    }
+
+    const rutaArchivo = path.join(uploadsDir, nombre);
+
+    if (!fs.existsSync(rutaArchivo)) {
+      return res.status(404).json({
+        mensaje: 'Documento registrado, pero archivo no encontrado.'
+      });
+    }
+
+    return res.download(rutaArchivo, nombre);
   } catch (error) {
     next(error);
   }
@@ -97,6 +130,13 @@ const pool = new Pool({
   port: process.env.DB_PORT || 5432,
 });
 
+/* GEOCARGA AZUL EXTERNO */
+app.get('/tailwind-local.css', (req, res) => {
+    res.sendFile(__dirname + '/estilos/tailwind-local.css');
+});
+app.get('/geocarga-azul.css', (req, res) => {
+    res.sendFile(__dirname + '/geocarga-azul.css');
+});
 const htmlPrincipal = `
 <!DOCTYPE html>
 <html lang="es">
@@ -104,7 +144,7 @@ const htmlPrincipal = `
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GeoCarga - Sistema de Control Logístico</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/tailwind-local.css">
   <link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
   <style>
@@ -129,6 +169,681 @@ const htmlPrincipal = `
     #mapa-flota { width: 100%; height: calc(100dvh - 145px); min-height: 420px; }
     #mapa-flota:fullscreen { height: 100%; margin: 0; border-radius: 0; }
   </style>
+<style id="geocarga-metal-theme">
+:root {
+    --metal-bg: #08090c;
+    --metal-panel: #15171d;
+    --metal-red: #168bff;
+    --metal-border: #168bff;
+    --metal-text: #f0f0f2;
+}
+
+body {
+    background:
+        radial-gradient(circle at 85% 5%, rgba(22,139,255,.16), transparent 35%),
+        linear-gradient(135deg, #08090c, #15171d 60%, #08090c) !important;
+    color: var(--metal-text);
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.bg-slate-800,
+.bg-slate-800\/50 {
+    background: linear-gradient(145deg, #1d2027, #0e1015) !important;
+    border-color: var(--metal-border) !important;
+}
+
+.bg-slate-900 {
+    background-color: #0c0e13 !important;
+}
+
+.border-slate-700 {
+    border-color: #44212a !important;
+}
+
+.text-sky-400,
+.text-sky-500 {
+    color: #168bff !important;
+}
+
+.bg-sky-600 {
+    background: linear-gradient(135deg, #168bff, #168bff) !important;
+    box-shadow: 0 4px 18px rgba(22,139,255,.22);
+}
+
+.bg-sky-600:hover {
+    background: linear-gradient(135deg, #168bff, #168bff) !important;
+}
+
+button {
+    transition: transform .2s, box-shadow .2s, background .2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+input:focus {
+    border-color: #168bff !important;
+    box-shadow: 0 0 0 2px rgba(22,139,255,.16);
+}
+
+header {
+    background: linear-gradient(90deg, #090a0d, #211118, #090a0d) !important;
+    border-bottom: 1px solid #214b80 !important;
+}
+
+aside {
+    background: linear-gradient(180deg, #15171d, #090a0d) !important;
+    border-right: 1px solid #214b80 !important;
+}
+
+aside button:hover {
+    background: rgba(22,139,255,.16) !important;
+    color: white !important;
+}
+
+h1, h2, h3 {
+    letter-spacing: .4px;
+}
+
+h1 {
+    font-weight: 900 !important;
+    font-style: italic;
+    text-transform: uppercase;
+    text-shadow: 2px 2px 0 #168bff, 0 0 22px rgba(22,139,255,.35);
+}
+
+#vista-login > div,
+#vista-login.bg-slate-800 {
+    box-shadow: 0 25px 70px rgba(0,0,0,.65),
+                0 0 35px rgba(22,139,255,.13) !important;
+}
+
+.rounded-xl {
+    border-radius: 14px;
+}
+
+main section > div,
+#vista-dash {
+    animation: metalEntrada .45s ease-out both;
+}
+
+@keyframes metalEntrada {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+</style>
+<style id="geocarga-metal-v2">
+:root {
+  --rojo-metal: #168bff;
+  --acero: #8993a5;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 85% 0%, #47101d55, transparent 45%),
+    repeating-linear-gradient(135deg, transparent 0px, transparent 4px, #ffffff03 5px),
+    #08090d !important;
+}
+
+header {
+  background: linear-gradient(100deg, #09090c, #231017, #09090c) !important;
+  border-bottom: 2px solid #168bff !important;
+  box-shadow: 0 5px 30px #000a;
+}
+
+header h1, header .text-sky-400 {
+  font-size: 1.65rem !important;
+  font-weight: 1000 !important;
+  font-style: italic;
+  letter-spacing: -1px;
+  color: #f3f4f6 !important;
+  text-shadow: 3px 3px #0754bd, 0 0 25px #168bff66;
+}
+
+aside {
+  background:
+    linear-gradient(180deg, #17191f, #090a0d) !important;
+  border-right: 2px solid #168bff !important;
+  box-shadow: 8px 0 30px #0008;
+}
+
+aside button {
+  border: 1px solid transparent;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  transition: all .25s ease !important;
+}
+
+aside button:hover {
+  border-color: #168bff !important;
+  background: linear-gradient(90deg, #168bff, #190d13) !important;
+  box-shadow: inset 3px 0 #168bff, 0 0 18px #168bff2a;
+  transform: translateX(4px);
+}
+
+aside button.bg-sky-600 {
+  background: linear-gradient(100deg, #168bff, #168bff) !important;
+  border-color: #168bff !important;
+  box-shadow: 0 0 22px #168bff50;
+}
+
+main h2 {
+  font-size: 1.65rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-left: 5px solid #168bff;
+  padding-left: 15px;
+}
+
+main .bg-slate-800 {
+  background:
+    linear-gradient(145deg, #252a34, #12151c) !important;
+  border: 1px solid #168bff !important;
+  border-top: 2px solid #168bff !important;
+  box-shadow: 0 12px 30px #0006, inset 0 1px #ffffff12;
+}
+
+main .bg-slate-800:hover {
+  border-color: #168bff !important;
+  box-shadow: 0 14px 35px #0009, 0 0 18px #168bff22;
+}
+
+main .text-3xl {
+  font-size: 2.5rem !important;
+  font-weight: 900 !important;
+  text-shadow: 0 0 20px currentColor;
+}
+
+input, select, textarea {
+  background: #0d1016 !important;
+  border-color: #168bff !important;
+  color: #f8fafc !important;
+}
+
+button.bg-sky-600, button.bg-red-700 {
+  background: linear-gradient(135deg, #123e80, #168bff) !important;
+  border: 1px solid #168bff !important;
+  box-shadow: 0 4px 18px #168bff33;
+}
+
+#vista-login > div {
+  border: 1px solid #168bff !important;
+  border-top: 4px solid #168bff !important;
+  box-shadow: 0 30px 90px #000b, 0 0 50px #168bff22 !important;
+}
+
+#vista-login h1 {
+  font-size: 3rem !important;
+  letter-spacing: -2px;
+  color: #f8fafc !important;
+  text-shadow: 4px 4px #0754bd, 0 0 30px #168bff66;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+</style>
+<style id="geocarga-metal-v3">
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap');
+
+body {
+  font-family: 'Rajdhani', sans-serif !important;
+  background: #07090d !important;
+  background-image:
+    radial-gradient(ellipse at 75% 0%, #5b102033, transparent 45%),
+    repeating-linear-gradient(135deg, transparent 0 6px, #ffffff03 7px 8px) !important;
+}
+
+#vista-app header {
+  min-height: 92px;
+  background: linear-gradient(100deg,#08090c,#260b16,#08090c) !important;
+  border-bottom: 2px solid #168bff !important;
+}
+
+.gc-brand {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.gc-emblem {
+  font-size: 42px;
+  color: #168bff;
+  filter: drop-shadow(0 0 12px #168bff77);
+}
+
+.gc-brand-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 30px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -2px;
+  color: #f3f4f6;
+  text-shadow: 3px 3px #168bff, 0 0 25px #168bff55;
+}
+
+.gc-brand-sub {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #9ca3af;
+}
+
+#area-aplicacion > aside {
+  width: 270px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg,#171a20,#08090c) !important;
+  border-right: 2px solid #168bff !important;
+}
+
+#area-aplicacion > aside::before {
+  content: '⚡ CENTRO DE CONTROL';
+  display: block;
+  padding: 15px 8px 22px;
+  color: #168bff;
+  font-family: 'Orbitron',sans-serif;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+#area-aplicacion > aside button {
+  min-height: 48px;
+  margin-bottom: 8px;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  border: 1px solid #ffffff12;
+  background: linear-gradient(90deg,#1c2028,#101217);
+}
+
+#area-aplicacion > aside button:hover {
+  background: linear-gradient(90deg,#0754bd,#0b1524) !important;
+  border-color: #168bff !important;
+  box-shadow: 0 0 20px #168bff33;
+}
+
+#sec-dashboard {
+  max-width: 1900px;
+  margin: auto;
+}
+
+.gc-dashboard-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 8px 0 15px;
+}
+
+.gc-dashboard-title h2 {
+  font-family: 'Orbitron',sans-serif;
+  font-size: clamp(19px,2.5vw,32px) !important;
+  letter-spacing: 1px;
+}
+
+.gc-live {
+  padding: 8px 14px;
+  border: 1px solid #168bff;
+  background: #0b1728;
+  color: #7dd3fc;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 5px;
+}
+
+.gc-control-grid {
+  display: grid;
+  grid-template-columns: minmax(0,2.2fr) minmax(270px,1fr);
+  gap: 18px;
+}
+
+.gc-panel {
+  background: linear-gradient(145deg,#1c2028,#0b0d12);
+  border: 1px solid #315c8b;
+  border-top: 2px solid #168bff;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 15px 35px #0009;
+  min-width: 0;
+}
+
+.gc-panel-heading {
+  color: #f8fafc;
+  font-family: 'Orbitron',sans-serif;
+  font-size: 13px;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+}
+
+.gc-radar-frame {
+  height: 450px;
+  border: 1px solid #254d7b;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0b1720;
+  position: relative;
+}
+
+.gc-radar-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.gc-radar-label {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  padding: 7px 12px;
+  background: #090b10dd;
+  border: 1px solid #168bff;
+  color: #f3f4f6;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.gc-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.gc-stat {
+  padding: 15px;
+  border: 1px solid #1c3556;
+  border-left: 4px solid #168bff;
+  background: #0b0e14;
+  margin-bottom: 10px;
+}
+
+.gc-stat-label {
+  color: #aeb7c5;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.gc-stat-value {
+  font-family: 'Orbitron',sans-serif;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.gc-footer {
+  margin-top: 20px;
+  padding: 15px;
+  text-align: center;
+  color: #7e8798;
+  border-top: 1px solid #168bff;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+@media(max-width:1050px) {
+  .gc-control-grid { grid-template-columns: 1fr; }
+  #area-aplicacion > aside { width: 220px; }
+}
+
+@media(max-width:700px) {
+  #area-aplicacion { flex-direction: column; }
+  #area-aplicacion > aside {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  #area-aplicacion > aside button { width: auto; }
+  .gc-radar-frame { height: 350px; }
+  .gc-brand-name { font-size: 22px; }
+}
+</style>
+<style id="gc-radar-fix">
+#gc-radar-preview {
+  width: 100%;
+  height: 100%;
+  min-height: 450px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at center,#142b35,#060d13 75%);
+}
+.gc-radar-message {
+  text-align: center;
+  color: white;
+}
+.gc-radar-message h3 {
+  font-size: 22px;
+  font-weight: 900;
+  margin: 12px 0;
+}
+.gc-radar-message p {
+  color: #94a3b8;
+  margin-bottom: 20px;
+}
+.gc-radar-message button {
+  padding: 12px 25px;
+  background: linear-gradient(90deg,#168bff,#168bff);
+  border: 1px solid #168bff;
+  border-radius: 8px;
+  font-weight: bold;
+}
+</style>
+<style id="gc-ozzy-animation">
+.gc-ozzy-bat {
+  position: relative;
+  width: 55px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.gc-bat-wings {
+  display: block;
+  font-size: 38px;
+  animation: gcBatFly 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px #168bff);
+  transform-origin: center;
+}
+
+.gc-bat-head {
+  position: absolute;
+  top: 6px;
+  left: 17px;
+  font-size: 18px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gc-ozzy-bat:hover .gc-bat-head {
+  animation: gcHeadFly 1.5s ease-out forwards;
+}
+
+.gc-ozzy-bat:hover .gc-bat-wings {
+  animation: gcBatBite .5s ease-in-out infinite;
+}
+
+@keyframes gcBatFly {
+  0%,100% { transform: translateY(0) rotate(-7deg) scale(1); }
+  50% { transform: translateY(-5px) rotate(7deg) scale(1.13); }
+}
+
+@keyframes gcBatBite {
+  0%,100% { transform: rotate(-10deg) scale(1); }
+  50% { transform: rotate(12deg) scale(1.2); }
+}
+
+@keyframes gcHeadFly {
+  0% {
+    opacity: 1;
+    transform: translate(0,0) rotate(0deg);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(10px,-15px) rotate(40deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(70px,-50px) rotate(540deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-bat-wings,
+  .gc-ozzy-bat:hover .gc-bat-head {
+    animation: none !important;
+  }
+}
+</style>
+
+
+<script id="gc-blue-white-runtime">
+document.addEventListener('DOMContentLoaded', function () {
+  var css = document.createElement('style');
+  css.textContent = [
+    '#vista-app aside button.bg-rose-600,',
+    '#vista-app aside button.bg-red-600,',
+    '#vista-app aside button.bg-pink-600 {',
+    'background:linear-gradient(120deg,#0758cc,#1688ff)!important;',
+    'border-color:#42b7ff!important;',
+    'box-shadow:0 0 18px rgba(22,119,255,.22)!important;',
+    '}'
+  ].join('');
+  document.head.appendChild(css);
+});
+</script>
+
+
+<style id="gc-azul-final">
+/* GEOCARGA - NEGRO, AZUL ELECTRICO Y BLANCO */
+
+/* Fondo general */
+html, body {
+    background: #05080e !important;
+    color: #f8fbff !important;
+}
+
+/* Encabezado principal */
+#vista-app header {
+    background: linear-gradient(110deg,#05080e,#09182b) !important;
+    border-bottom: 2px solid #168bff !important;
+    box-shadow: 0 2px 20px #168bff25 !important;
+}
+
+/* Menu lateral */
+#vista-app aside {
+    background: #090f19 !important;
+    border-right: 1px solid #168bff !important;
+}
+
+/* Botones del menu */
+#vista-app aside button {
+    color: #f8fbff !important;
+    border-color: #263a54 !important;
+    background: #101927 !important;
+}
+
+#vista-app aside button:hover {
+    background: #17365a !important;
+    border-color: #168bff !important;
+}
+
+/* Boton activo */
+#vista-app aside button.bg-sky-600,
+#vista-app aside button.bg-blue-600,
+#vista-app aside button[class*="active"] {
+    background: linear-gradient(110deg,#0756b8,#168bff) !important;
+    border-color: #63b8ff !important;
+    color: white !important;
+}
+
+/* Tarjetas y paneles */
+#vista-app main > div,
+#vista-app section > div {
+    border-color: #168bff55;
+}
+
+/* Botones rojos existentes */
+#vista-app button[class*="bg-rose"],
+#vista-app button[class*="bg-red"],
+#vista-app button[class*="bg-pink"],
+#vista-app a[class*="bg-rose"],
+#vista-app a[class*="bg-red"] {
+    background: linear-gradient(110deg,#0756b8,#168bff) !important;
+    border-color: #63b8ff !important;
+    color: #fff !important;
+}
+
+/* Bordes rojos de Tailwind */
+#vista-app [class*="border-rose"],
+#vista-app [class*="border-red"],
+#vista-app [class*="border-pink"] {
+    border-color: #168bff !important;
+}
+
+/* Textos rojos */
+#vista-app [class*="text-rose"],
+#vista-app [class*="text-red"],
+#vista-app [class*="text-pink"] {
+    color: #65baff !important;
+}
+
+/* Brillos */
+#vista-app [class*="shadow-rose"],
+#vista-app [class*="shadow-red"] {
+    --tw-shadow-color: #168bff55 !important;
+}
+
+/* Logo */
+#vista-app header h1 {
+    color: white !important;
+    text-shadow: 0 0 14px #168bff88 !important;
+}
+
+/* Radar: conservar sus colores de aeronaves */
+#gc-traccar-contenedor,
+#gc-radar-preview {
+    border-color: #168bff !important;
+}
+
+/* Elementos de formularios */
+#vista-app input:focus,
+#vista-app select:focus,
+#vista-app textarea:focus {
+    border-color: #168bff !important;
+    outline-color: #168bff !important;
+}
+
+/* Sobrescribir colores rojos definidos por temas antiguos */
+#vista-app {
+    --gc-red: #168bff;
+    --gc-accent: #168bff;
+    --gc-border: #168bff;
+    --gc-glow: #168bff66;
+}
+
+/* Correccion visual global de bordes */
+#vista-app [style*="border-color: rgb(225, 29, 72)"],
+#vista-app [style*="border-color: #168bff"] {
+    border-color: #168bff !important;
+}
+</style>
+<link id="gc-tema-azul" rel="stylesheet" href="/geocarga-azul.css?v=20261108">
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen">
 
@@ -165,7 +880,16 @@ const htmlPrincipal = `
   <div id="vista-app" class="hidden min-h-screen flex flex-col">
     <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
       <div class="flex items-center space-x-3">
-        <span class="text-xl font-bold text-sky-400">GeoCarga</span>
+        <div class="gc-brand">
+  <div class="gc-emblem gc-ozzy-bat" title="Ozzy Bat">
+  <span class="gc-bat-wings">🦇</span>
+  <span class="gc-bat-head">💀</span>
+</div>
+  <div>
+    <div class="gc-brand-name">GEOCARGA</div>
+    <div class="gc-brand-sub">AIR OPERATIONS COMMAND</div>
+  </div>
+</div>
         <span class="bg-sky-950 text-sky-400 text-xs px-2.5 py-0.5 rounded border border-sky-800" id="tag-rol">Rol</span>
       </div>
       <div class="flex items-center space-x-4">
@@ -226,30 +950,91 @@ const htmlPrincipal = `
         </section>
         <!-- DASHBOARD -->
         <section id="sec-dashboard" class="space-y-6">
-          <h2 class="text-xl font-semibold">Resumen Operativo</h2>
+
+          <div class="gc-dashboard-title">
+            <h2>⚡ CENTRO DE OPERACIONES</h2>
+            <span class="gc-live">● GEOCARGA / DEMO LOCAL</span>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-              <p class="text-xs text-slate-400 uppercase font-semibold">Cargas en Tránsito</p>
+            <div class="gc-panel">
+              <p class="text-xs text-slate-400 uppercase">Cargas en Tránsito</p>
               <h3 class="text-3xl font-bold text-sky-400 mt-2" id="kpi-transito">0</h3>
             </div>
-            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-              <p class="text-xs text-slate-400 uppercase font-semibold">En Aduana</p>
+            <div class="gc-panel">
+              <p class="text-xs text-slate-400 uppercase">En Aduana</p>
               <h3 class="text-3xl font-bold text-amber-400 mt-2" id="kpi-aduana">0</h3>
             </div>
-            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-              <p class="text-xs text-slate-400 uppercase font-semibold">Entregados</p>
+            <div class="gc-panel">
+              <p class="text-xs text-slate-400 uppercase">Entregados</p>
               <h3 class="text-3xl font-bold text-emerald-400 mt-2" id="kpi-entregados">0</h3>
             </div>
           </div>
 
-          <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-            <h3 class="text-sm font-semibold uppercase text-slate-300 mb-3">Últimas Alertas / Novedades</h3>
+          <div class="gc-control-grid">
+
+            <div class="gc-panel">
+              <div class="gc-panel-heading">✈ RADAR DE OPERACIONES / SUDAMÉRICA</div>
+              <div class="gc-radar-frame">
+                <div class="gc-radar-label">GEOCARGA RADAR</div>
+                <div id="gc-radar-preview">
+  <div class="gc-radar-message">
+    <div style="font-size:48px">✈</div>
+    <h3>RADAR DE SUDAMÉRICA</h3>
+    <p>Visualización de aeronaves GeoCarga</p>
+    <button onclick="cambiarSeccion('tracer')">
+      ACTIVAR RADAR EN VIVO
+    </button>
+  </div>
+</div>
+              </div>
+            </div>
+
+            <div class="gc-side-stack">
+              <div class="gc-panel">
+                <div class="gc-panel-heading">⚡ ESTADO LOGÍSTICO</div>
+
+                <div class="gc-stat">
+                  <div class="gc-stat-label">Cargas en tránsito</div>
+                  <div class="gc-stat-value" id="gc-transito">--</div>
+                </div>
+
+                <div class="gc-stat">
+                  <div class="gc-stat-label">En aduana</div>
+                  <div class="gc-stat-value" id="gc-aduana">--</div>
+                </div>
+
+                <div class="gc-stat">
+                  <div class="gc-stat-label">Entregados</div>
+                  <div class="gc-stat-value" id="gc-entregados">--</div>
+                </div>
+              </div>
+
+              <div class="gc-panel">
+                <div class="gc-panel-heading">📡 ACCESO AL RADAR</div>
+                <p class="text-sm text-slate-400 mb-4">
+                  Consulta las aeronaves y su posición en el módulo de rastreo.
+                </p>
+                <button onclick="cambiarSeccion('tracer')"
+                  class="w-full bg-sky-600 text-white py-3 rounded-lg font-bold">
+                  ABRIR RADAR COMPLETO
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="gc-panel">
+            <div class="gc-panel-heading">⚠ ÚLTIMAS ALERTAS / NOVEDADES</div>
             <div id="lista-novedades" class="space-y-2 text-sm text-slate-300">
               Cargando alertas...
             </div>
           </div>
-        </section>
 
+          <div class="gc-footer">
+            GEOCARGA METAL EDITION · CENTRO DE CONTROL LOGÍSTICO
+          </div>
+
+        </section>
         <!-- REGISTRAR PEDIDO -->
         <section id="sec-nuevo-pedido" class="hidden max-w-2xl bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
           <h2 class="text-xl font-semibold">Generar Nuevo Pedido de Carga</h2>
@@ -353,7 +1138,7 @@ const htmlPrincipal = `
 
           <p id="mensaje-rastreo" role="status"></p>
           <p id="telemetria" role="status"></p>
-          <div id="flota-radar" class="hidden bg-slate-800 rounded-xl p-5 overflow-x-auto">
+          <div id="flota-radar" class="hidden bg-slate-800 rounded-xl p-5 overflow-x-auto" style="display:none !important;">
             <h2 class="text-lg font-semibold">Aviones en el radar</h2>
             <form id="form-filtro-avion" class="my-3 flex flex-wrap items-center gap-2">
               <label for="filtro-avion">Aeronave</label>
@@ -423,6 +1208,9 @@ const htmlPrincipal = `
           <p id="mensaje-vuelos" role="status"></p>
           <div class="flex justify-between items-center">
             <h2 class="text-xl font-semibold">Reporte General de Operaciones</h2>
+                        <button type="button" onclick="descargarPDFGeneral()" class="bg-sky-700 hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+              Descargar PDF General
+            </button>
             <button onclick="cargarReportes()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-slate-200">
               🔄 Actualizar Datos
             </button>
@@ -648,7 +1436,16 @@ const htmlPrincipal = `
     async function cargarDashboard() {
       try {
         const res = await fetch(API_URL + '/dashboard');
+
+        if (!res.ok) {
+          throw new Error('Error al consultar el dashboard: HTTP ' + res.status);
+        }
+
         const data = await res.json();
+
+        if (!data.resumen) {
+          throw new Error('El servidor no devolvió el resumen de operaciones');
+        }
         document.getElementById('kpi-transito').textContent = data.resumen.en_transito || 0;
         document.getElementById('kpi-aduana').textContent = data.resumen.en_aduana || 0;
         document.getElementById('kpi-entregados').textContent = data.resumen.entregados || 0;
@@ -1118,6 +1915,26 @@ const htmlPrincipal = `
           return;
         }
         const data = await res.json();
+
+        // gc-radar-seleccion
+        const radarId = data.operacion && data.operacion.radar_id;
+
+        const iframeRadar = document.querySelector(
+          "#gc-traccar-contenedor iframe"
+        );
+
+        if (iframeRadar && radarId != null && radarId !== "") {
+          const urlRadar = new URL(
+            "http://127.0.0.1:8000/"
+          );
+
+          urlRadar.searchParams.set(
+            "avion",
+            String(radarId)
+          );
+
+          iframeRadar.src = urlRadar.toString();
+        }
         document.getElementById('resultado-tracer').classList.remove('hidden');
         document.getElementById('tracer-id').textContent = '#' + data.operacion.id_operacion;
         document.getElementById('tracer-vuelo').textContent = data.operacion.numero_vuelo + ' (' + data.operacion.aerolinea + ')';
@@ -1179,7 +1996,7 @@ const htmlPrincipal = `
             '<td class="p-3.5"><span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800">' + escaparTexto(op.estado_general) + '</span></td>' +
             '<td class="p-3.5 font-semibold text-slate-300">' + op.total_documentos + '</td>' +
             '<td class="p-3.5 font-semibold ' + (op.total_novedades > 0 ? 'text-amber-400' : 'text-slate-500') + '">' + op.total_novedades + '</td>' +
-            '<td class="p-3.5"><button onclick="irARastrear(' + op.id_operacion + ')" class="text-xs bg-sky-600 hover:bg-sky-500 px-2.5 py-1 rounded text-white font-medium">Rastrear</button></td>' +
+            '<td class="p-3.5"><button onclick="descargarManifiestoPDF(' + op.id_operacion + ')" class="text-xs bg-cyan-700 hover:bg-cyan-600 px-2.5 py-1 rounded text-white font-medium mr-1">PDF</button><button onclick="irARastrear(' + op.id_operacion + ')" class="text-xs bg-sky-600 hover:bg-sky-500 px-2.5 py-1 rounded text-white font-medium">Rastrear</button></td>' +
           '</tr>';
         }).join('');
       } catch (err) {
@@ -1187,6 +2004,52 @@ const htmlPrincipal = `
       }
     }
 
+    async function descargarPDF(url, nombre) {
+      try {
+        const respuesta = await fetch(url);
+
+        if (!respuesta.ok) {
+          let mensaje = 'Error al generar el PDF (HTTP ' + respuesta.status + ').';
+
+          try {
+            const error = await respuesta.json();
+            mensaje = error.mensaje || mensaje;
+          } catch (_) {}
+
+          throw new Error(mensaje);
+        }
+
+        const blob = await respuesta.blob();
+        const enlace = document.createElement('a');
+        const objetoURL = URL.createObjectURL(blob);
+
+        enlace.href = objetoURL;
+        enlace.download = nombre;
+        document.body.appendChild(enlace);
+        enlace.click();
+        enlace.remove();
+
+        setTimeout(() => URL.revokeObjectURL(objetoURL), 1000);
+      } catch (error) {
+        alert(error.message || 'No fue posible descargar el PDF.');
+      }
+    }
+
+    function descargarPDFGeneral() {
+      const vuelo = document.getElementById('numero-vuelo').value.trim();
+
+      descargarPDF(
+        API_URL + '/reportes/pdf/general?' + new URLSearchParams({ vuelo }),
+        'GeoCarga_Reporte_Operaciones.pdf'
+      );
+    }
+
+    function descargarManifiestoPDF(id) {
+      descargarPDF(
+        API_URL + '/reportes/pdf/manifiesto/' + encodeURIComponent(id),
+        'GeoCarga_Manifiesto_' + id + '.pdf'
+      );
+    }
     function irARastrear(id) {
       cambiarSeccion('tracer');
       buscarRastreo(id);
@@ -1202,6 +2065,98 @@ const htmlPrincipal = `
       mostrarAplicacion(usuario);
     }).catch(() => {});
   </script>
+<script id="geocarga-metal-v3-script">
+(function () {
+  function sincronizar() {
+    const pares = [
+      ['kpi-transito','gc-transito'],
+      ['kpi-aduana','gc-aduana'],
+      ['kpi-entregados','gc-entregados']
+    ];
+
+    pares.forEach(function (par) {
+      const origen = document.getElementById(par[0]);
+      const destino = document.getElementById(par[1]);
+      if (origen && destino) destino.textContent = origen.textContent;
+    });
+  }
+
+  const observer = new MutationObserver(sincronizar);
+
+  window.addEventListener('DOMContentLoaded', function () {
+    sincronizar();
+
+    ['kpi-transito','kpi-aduana','kpi-entregados'].forEach(function (id) {
+      const elemento = document.getElementById(id);
+      if (elemento) observer.observe(elemento, {
+        childList: true,
+        characterData: true,
+        subtree: true
+      });
+    });
+  });
+})();
+</script>
+<style id="gc-traccar-integrado">
+#gc-traccar-contenedor {
+  width: 100%;
+  height: calc(100vh - 150px);
+  min-height: 650px;
+  background: #080d14;
+  border: 1px solid #168bff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.gc-traccar-iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+#gc-radar-preview {
+  padding: 0 !important;
+  display: block !important;
+}
+#gc-radar-preview .gc-traccar-iframe {
+  min-height: 450px;
+}
+</style>
+
+<script id="gc-traccar-integracion">
+document.addEventListener('DOMContentLoaded', function () {
+  var radarUrl = 'http://127.0.0.1:8000/';
+
+  function crearRadar() {
+    var iframe = document.createElement('iframe');
+    iframe.className = 'gc-traccar-iframe';
+    iframe.src = radarUrl;
+    iframe.title = 'GeoCarga - Radar Traccar';
+    iframe.setAttribute('allowfullscreen', '');
+    return iframe;
+  }
+
+  var tracer = document.getElementById('sec-tracer');
+
+  if (tracer && !document.getElementById('gc-traccar-contenedor')) {
+    var elementos = Array.from(tracer.children);
+
+    elementos.forEach(function (elemento) {
+      elemento.style.display = '';
+    });
+
+    var contenedor = document.createElement('div');
+    contenedor.id = 'gc-traccar-contenedor';
+    contenedor.appendChild(crearRadar());
+    tracer.prepend(contenedor);
+  }
+
+  var preview = document.getElementById('gc-radar-preview');
+
+  if (preview) {
+    preview.replaceChildren(crearRadar());
+  }
+});
+</script>
 </body>
 </html>
 `;
@@ -1419,7 +2374,7 @@ app.get('/api/documentos', exigirSesion, async (req, res) => {
 });
 
 async function obtenerAvionesRadar() {
-  const url = new URL('/api/aviones', process.env.RADAR_URL || 'http://127.0.0.1:8000');
+  const url = new URL('/api/aviones', process.env.RADAR_URL || 'http://127.0.0.1:8001');
   const respuesta = await fetch(url, { signal: AbortSignal.timeout(3500) });
   if (!respuesta.ok) throw new Error('Radar no disponible');
   const aviones = await respuesta.json();
@@ -1537,6 +2492,202 @@ app.get('/api/operaciones/:id/tracer', exigirSesion, async (req, res) => {
   }
 });
 
+
+// GEOCARGA_PDF_INTEGRACION_V1
+const { jsPDF } = require('jspdf');
+const { autoTable } = require('jspdf-autotable');
+
+function generarPDFGeoCarga(operaciones, manifiesto = false) {
+  const doc = new jsPDF({
+    orientation: manifiesto ? 'portrait' : 'landscape',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  const ancho = doc.internal.pageSize.getWidth();
+
+  doc.setFillColor(9, 25, 48);
+  doc.rect(0, 0, ancho, 48, 'F');
+  doc.setFillColor(0, 174, 239);
+  doc.rect(0, 48, ancho, 2, 'F');
+
+  doc.setTextColor(100, 220, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('GEOCARGA  |  AIR OPERATIONS', 14, 15);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(19);
+  doc.text(
+    manifiesto ? 'AIR CARGO MANIFEST' : 'REPORTE DE OPERACIONES',
+    14,
+    29
+  );
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(185, 205, 225);
+  doc.text(
+    manifiesto ? 'Manifiesto de operacion aerea' : 'Control logistico de carga aerea',
+    14,
+    39
+  );
+
+  doc.setTextColor(25, 48, 75);
+  doc.setFontSize(10);
+  doc.text('Fecha de emision: ' + new Date().toLocaleString('es-CO'), 14, 61);
+
+  if (manifiesto) {
+    const op = operaciones[0];
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('OPERACION GC-' + String(op.id_operacion).padStart(6, '0'), 14, 72);
+
+    autoTable(doc, {
+      startY: 82,
+      head: [['CAMPO', 'INFORMACION']],
+      body: [
+        ['Numero de vuelo', String(op.numero_vuelo ?? '')],
+        ['Aerolinea', String(op.aerolinea ?? '')],
+        ['Origen', String(op.origen ?? '')],
+        ['Destino', String(op.destino ?? '')],
+        ['Etapa', String(op.etapa_flujo ?? '')],
+        ['Estado', String(op.estado_general ?? '')],
+        ['Documentos', String(op.total_documentos ?? 0)],
+        ['Novedades', String(op.total_novedades ?? 0)]
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [13, 43, 75] }
+    });
+  } else {
+    doc.text('Total de operaciones: ' + operaciones.length, 14, 70);
+
+    autoTable(doc, {
+      startY: 80,
+      head: [['ID', 'Vuelo', 'Aerolinea', 'Ruta', 'Etapa', 'Estado', 'Docs', 'Novedades']],
+      body: operaciones.map(op => [
+        String(op.id_operacion ?? ''),
+        String(op.numero_vuelo ?? ''),
+        String(op.aerolinea ?? ''),
+        String(op.origen ?? '') + ' - ' + String(op.destino ?? ''),
+        String(op.etapa_flujo ?? ''),
+        String(op.estado_general ?? ''),
+        String(op.total_documentos ?? 0),
+        String(op.total_novedades ?? 0)
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: [13, 43, 75] },
+      styles: { fontSize: 8 }
+    });
+  }
+
+  const paginas = doc.internal.getNumberOfPages();
+
+  for (let i = 1; i <= paginas; i++) {
+    doc.setPage(i);
+
+    const alto = doc.internal.pageSize.getHeight();
+
+    doc.setDrawColor(200, 215, 230);
+    doc.line(14, alto - 18, ancho - 14, alto - 18);
+
+    doc.setTextColor(85, 105, 125);
+    doc.setFontSize(8);
+    doc.text('GEOCARGA | Sistema de operaciones aereas', 14, alto - 12);
+    doc.text('Pagina ' + i + ' de ' + paginas, ancho - 14, alto - 12, {
+      align: 'right'
+    });
+  }
+
+  return Buffer.from(doc.output('arraybuffer'));
+}
+
+app.get('/api/reportes/pdf/general', exigirLectura, async (req, res) => {
+  try {
+    const vuelo = typeof req.query.vuelo === 'string' ? req.query.vuelo.trim() : '';
+
+    const resultado = await pool.query(`
+      SELECT
+        o.id_operacion,
+        v.numero_vuelo,
+        v.aerolinea,
+        v.origen,
+        v.destino,
+        o.etapa_flujo,
+        o.estado_general,
+        COUNT(DISTINCT n.id_novedad) AS total_novedades,
+        COUNT(DISTINCT d.id_documento) AS total_documentos
+      FROM operaciones o
+      JOIN vuelos v ON o.id_vuelo = v.id_vuelo
+      LEFT JOIN novedades n ON o.id_operacion = n.id_operacion
+      LEFT JOIN documentacion d ON o.id_operacion = d.id_operacion
+      WHERE strpos(lower(v.numero_vuelo), lower($1)) > 0 OR $1 = ''
+      GROUP BY o.id_operacion, v.numero_vuelo, v.aerolinea,
+               v.origen, v.destino, o.etapa_flujo, o.estado_general
+      ORDER BY o.id_operacion DESC
+    `, [vuelo]);
+
+    if (!resultado.rows.length) {
+      return res.status(404).json({ mensaje: 'No hay operaciones para exportar.' });
+    }
+
+    const pdf = generarPDFGeoCarga(resultado.rows);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="GeoCarga_Reporte_Operaciones.pdf"');
+    res.send(pdf);
+  } catch (error) {
+    console.error('Error PDF general:', error);
+    res.status(500).json({ mensaje: 'No fue posible generar el PDF.' });
+  }
+});
+
+app.get('/api/reportes/pdf/manifiesto/:id', exigirLectura, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return res.status(400).json({ mensaje: 'ID de operacion invalido.' });
+    }
+
+    const resultado = await pool.query(`
+      SELECT
+        o.id_operacion,
+        v.numero_vuelo,
+        v.aerolinea,
+        v.origen,
+        v.destino,
+        o.etapa_flujo,
+        o.estado_general,
+        COUNT(DISTINCT n.id_novedad) AS total_novedades,
+        COUNT(DISTINCT d.id_documento) AS total_documentos
+      FROM operaciones o
+      JOIN vuelos v ON o.id_vuelo = v.id_vuelo
+      LEFT JOIN novedades n ON o.id_operacion = n.id_operacion
+      LEFT JOIN documentacion d ON o.id_operacion = d.id_operacion
+      WHERE o.id_operacion = $1
+      GROUP BY o.id_operacion, v.numero_vuelo, v.aerolinea,
+               v.origen, v.destino, o.etapa_flujo, o.estado_general
+    `, [id]);
+
+    if (!resultado.rows.length) {
+      return res.status(404).json({ mensaje: 'Operacion no encontrada.' });
+    }
+
+    const pdf = generarPDFGeoCarga(resultado.rows, true);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="GeoCarga_Manifiesto_' + id + '.pdf"'
+    );
+    res.send(pdf);
+  } catch (error) {
+    console.error('Error manifiesto:', error);
+    res.status(500).json({ mensaje: 'No fue posible generar el manifiesto.' });
+  }
+});
 // REPORTES COMPLETOS (CON NOVEDADES Y DOCUMENTOS)
 app.get('/api/reportes/operaciones', exigirLectura, async (req, res) => {
   const vuelo = typeof req.query.vuelo === 'string' ? req.query.vuelo.trim() : '';

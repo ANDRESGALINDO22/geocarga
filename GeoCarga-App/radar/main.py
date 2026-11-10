@@ -58,8 +58,22 @@ def inicio():
     )
 
 
+# GEOCARGA_RADAR_DEMO_FIX
+def obtener_aviones_demo():
+    respuesta = requests.get(
+        "http://127.0.0.1:8001/api/aviones",
+        timeout=5
+    )
+    respuesta.raise_for_status()
+    return respuesta.json()
+
 @app.get("/api/aviones")
 def aviones():
+    if os.getenv("GEOCARGA_USAR_RADAR_DEMO") == "1":
+        try:
+            return obtener_aviones_demo()
+        except requests.RequestException as error:
+            raise HTTPException(status_code=502, detail=str(error))
     correo = os.getenv("TRACCAR_EMAIL")
     password = os.getenv("TRACCAR_PASSWORD")
 

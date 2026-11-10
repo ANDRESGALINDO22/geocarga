@@ -15,14 +15,21 @@ function Get-FreeLoopbackPort {
         $listener.Stop()
     }
 }
-$pgPort = Get-FreeLoopbackPort
+$pgPort = 5433
+$postgresIniciadoAqui = $false
 $env:DB_HOST = '127.0.0.1'
 $env:DB_PORT = "$pgPort"
 $env:DB_NAME = 'geocarga_db'
 $env:DB_USER = 'postgres'
 $env:DEMO_PASSWORD = 'GeoCargaDemo2026!'
 $env:JWT_SECRET = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
-$node = (Get-Command node).Source
+$node = "C:\Program Files\nodejs\node.exe"
+
+if (-not (Test-Path $node)) {
+    throw "No se encontro Node.js en $node"
+}
+
+$env:PATH = (Split-Path $node) + ";" + $env:PATH
 $backend = Join-Path $root 'backend'
 if (Test-Path 'C:/GeoCarga/backend/node_modules/express/package.json') {
     $env:NODE_PATH = 'C:/GeoCarga/backend/node_modules'
@@ -39,6 +46,7 @@ if (-not (Test-Path "$data/global/pg_control")) {
 if ($LASTEXITCODE -eq 0) {
     $pgPort = [int](Get-Content "$data/postmaster.pid" -TotalCount 4)[3]
 } else {
+    $postgresIniciadoAqui = $true
     & "$bin/pg_ctl.exe" -D $data -l "$runtime/postgres.log" -o "-h 127.0.0.1 -p $pgPort" -w start
     if ($LASTEXITCODE) {
         Get-Content "$runtime/postgres.log" -Tail 12
@@ -79,18 +87,79 @@ try {
         }
     }
 
-    $env:DEMO_RADAR_PORT = "$(Get-FreeLoopbackPort)"
-    $env:RADAR_URL = "http://127.0.0.1:$env:DEMO_RADAR_PORT"
+    # GEOCARGA_ORDEN_RADAR_V1
+    $env:GEOCARGA_USAR_RADAR_DEMO = "0"
+    $env:DEMO_RADAR_PORT = "8001"
+    $env:RADAR_URL = "http://127.0.0.1:8000"
     $radar = Start-DemoService 'radar-demo.js' $env:DEMO_RADAR_PORT '/api/aviones'
-    $env:PORT = "$(Get-FreeLoopbackPort)"
+    $env:PORT = "3000"
     $web = Start-DemoService 'server.js' $env:PORT '/api/radar/aviones'
     $url = "http://127.0.0.1:$env:PORT"
     Write-Host "GeoCarga demo: $url"
     Write-Host 'Usuario: admin@geocarga.com  Clave: GeoCargaDemo2026!'
     Start-Process $url
+    # GEOCARGA_INICIO_COMPLETO_V1
+    $python = "C:\GeoCarga\radar\.venv\Scripts\python.exe"
+
+    if (-not (Test-Path $python)) {
+        throw "No se encontro Python del radar."
+    }
+
+    $env:GEOCARGA_USAR_RADAR_DEMO = "0"
+
+    $visorExistente = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
+
+    if (-not $visorExistente) {
+        $visor = Start-Process $python `
+            -ArgumentList "-m uvicorn radar.main:app --host 127.0.0.1 --port 8000" `
+            -WorkingDirectory $root `
+            -PassThru
+
+        Write-Host "Visor radar iniciado en puerto 8000."
+    }
+
+    $simuladorArchivo = Join-Path $root "simulador\simulador_geocarga_suramerica.py"
+
+    # GEOCARGA_SIMULADOR_UNICO_V1
+    $simuladoresActivos = @(
+        Get-CimInstance Win32_Process |
+        Where-Object {
+            $_.Name -eq "python.exe" -and
+            $_.CommandLine -like "*simulador_geocarga_suramerica.py*"
+        }
+    )
+
+    if ($simuladoresActivos.Count -gt 0) {
+        Write-Host "Simulador existente detectado. No se inicia otro."
+        $simulador = $null
+    }
+    else {
+        $simulador = Start-Process $python `
+            -ArgumentList "`"$simuladorArchivo`"" `
+            -WorkingDirectory $root `
+            -PassThru
+
+        Write-Host "Simulador de aeronaves iniciado."
+    }
+
     Read-Host 'Pulsa Enter para detener la demo'
 } finally {
-    if ($web -and !$web.HasExited) { Stop-Process -Id $web.Id }
-    if ($radar -and !$radar.HasExited) { Stop-Process -Id $radar.Id }
-    & "$bin/pg_ctl.exe" -D $data -w stop
+    # GEOCARGA_CIERRE_CONTROLADO_V3
+    Write-Host "Cerrando servicios iniciados por este lanzador..." -ForegroundColor Yellow
+
+    foreach ($proceso in @($simulador, $visor, $web, $radar)) {
+        if ($null -ne $proceso) {
+            $actual = Get-CimInstance Win32_Process -Filter "ProcessId = $($proceso.Id)" -ErrorAction SilentlyContinue
+
+            if ($actual) {
+                & taskkill.exe /PID $proceso.Id /T /F 2>$null
+            }
+        }
+    }
+
+    if ($postgresIniciadoAqui) {
+        & "$bin/pg_ctl.exe" -D $data -m fast -w stop
+    }
+
+    Write-Host "Cierre finalizado." -ForegroundColor Green
 }

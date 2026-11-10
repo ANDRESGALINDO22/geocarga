@@ -1,10 +1,121 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GeoCarga</title>
   <script src="https://cdn.tailwindcss.com"></script>
+<style id="geocarga-metal-theme">
+:root {
+    --metal-bg: #08090c;
+    --metal-panel: #15171d;
+    --metal-red: #ed1735;
+    --metal-border: #4b222b;
+    --metal-text: #f0f0f2;
+}
+
+body {
+    background:
+        radial-gradient(circle at 85% 5%, rgba(237,23,53,.16), transparent 35%),
+        linear-gradient(135deg, #08090c, #15171d 60%, #08090c) !important;
+    color: var(--metal-text);
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.bg-slate-800,
+.bg-slate-800\/50 {
+    background: linear-gradient(145deg, #1d2027, #0e1015) !important;
+    border-color: var(--metal-border) !important;
+}
+
+.bg-slate-900 {
+    background-color: #0c0e13 !important;
+}
+
+.border-slate-700 {
+    border-color: #44212a !important;
+}
+
+.text-sky-400,
+.text-sky-500 {
+    color: #ff3652 !important;
+}
+
+.bg-sky-600 {
+    background: linear-gradient(135deg, #9c1027, #ed1735) !important;
+    box-shadow: 0 4px 18px rgba(237,23,53,.22);
+}
+
+.bg-sky-600:hover {
+    background: linear-gradient(135deg, #ed1735, #ff536b) !important;
+}
+
+button {
+    transition: transform .2s, box-shadow .2s, background .2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+input:focus {
+    border-color: #ed1735 !important;
+    box-shadow: 0 0 0 2px rgba(237,23,53,.16);
+}
+
+header {
+    background: linear-gradient(90deg, #090a0d, #211118, #090a0d) !important;
+    border-bottom: 1px solid #792336 !important;
+}
+
+aside {
+    background: linear-gradient(180deg, #15171d, #090a0d) !important;
+    border-right: 1px solid #792336 !important;
+}
+
+aside button:hover {
+    background: rgba(237,23,53,.16) !important;
+    color: white !important;
+}
+
+h1, h2, h3 {
+    letter-spacing: .4px;
+}
+
+h1 {
+    font-weight: 900 !important;
+    font-style: italic;
+    text-transform: uppercase;
+    text-shadow: 2px 2px 0 #580b1b, 0 0 22px rgba(237,23,53,.35);
+}
+
+#vista-login > div,
+#vista-login.bg-slate-800 {
+    box-shadow: 0 25px 70px rgba(0,0,0,.65),
+                0 0 35px rgba(237,23,53,.13) !important;
+}
+
+.rounded-xl {
+    border-radius: 14px;
+}
+
+main section > div,
+#vista-dash {
+    animation: metalEntrada .45s ease-out both;
+}
+
+@keyframes metalEntrada {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+</style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
 
